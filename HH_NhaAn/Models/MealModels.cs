@@ -105,14 +105,25 @@ public class DeptStatsVm : PeriodVm
     public AppSettings Settings { get; set; } = new();
 }
 
+public class SummarySide
+{
+    public string Title { get; set; } = "";
+    public string Css { get; set; } = "";
+    public decimal Price { get; set; }
+    public List<string> Columns { get; set; } = [];
+    /// <summary>Giá trị theo ngày (cùng thứ tự với SummaryVm.Days) × cột.</summary>
+    public List<int[]> Values { get; set; } = [];
+    public int[] Totals { get; set; } = [];
+    public int Sum => Totals.Sum();
+    public decimal Money => Sum * Price;
+}
+
 public class SummaryVm : PeriodVm
 {
     public string Mode { get; set; } = "all";   // all | vn | cn
     public bool Detail { get; set; }
-    public List<string> Columns { get; set; } = [];
-    public List<(DateOnly Date, int[] Values, bool HasData)> Rows { get; set; } = [];
-    public int[] ColTotals { get; set; } = [];
-    public decimal[] ColMoney { get; set; } = [];
+    public List<(DateOnly Date, bool HasData)> Days { get; set; } = [];
+    public List<SummarySide> Sides { get; set; } = [];
     public AppSettings Settings { get; set; } = new();
 }
 

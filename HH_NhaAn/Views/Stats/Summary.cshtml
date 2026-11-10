@@ -4,7 +4,8 @@
     string N(int x) => x == 0 ? "" : x.ToString("N0");
     string M(decimal x) => x.ToString("N0");
     var modeLabel = Model.Mode switch { "vn" => "cơm Việt Nam", "cn" => "cơm Trung Quốc", _ => "tất cả" };
-    var grand = Model.ColTotals.Sum();
+    var both = Model.Sides.Count > 1;
+    var totalCols = 1 + Model.Sides.Sum(x => x.Columns.Count + 1) + (both ? 1 : 0);
 }
 
 <form method="get" class="row g-2 align-items-end mb-3 no-print">
@@ -33,41 +34,64 @@
 <div class="table-responsive">
 <table class="table table-bordered table-sm stat-table text-center align-middle" id="sumTable">
     <thead>
-        <tr><th colspan="@(Model.Columns.Count + 2)" class="title-row">
+        <tr><th colspan="@totalCols" class="title-row">
             BẢNG TỔNG HỢP BÁO CƠM CÁC BỘ PHẬN<br />
             <span class="fw-normal small">Từ @Model.From.ToString("dd/MM/yyyy") đến @Model.To.ToString("dd/MM/yyyy") · Số liệu @Model.SrcLabel · Loại: @modeLabel</span>
         </th></tr>
         <tr>
-            <th>Ngày</th>
-            @foreach (var c in Model.Columns) { <th>@c</th> }
-            <th class="tot">TỔNG</th>
+            <th rowspan="2">Ngày</th>
+            @foreach (var sd in Model.Sides) { <th colspan="@(sd.Columns.Count + 1)" class="@sd.Css side-head">@sd.Title</th> }
+            @if (both) { <th rowspan="2" class="tot">TỔNG<br />CỘNG</th> }
+        </tr>
+        <tr>
+            @foreach (var sd in Model.Sides)
+            {
+                foreach (var c in sd.Columns) { <th class="@sd.Css">@c</th> }
+                <th class="@sd.Css sub side-end">Tổng</th>
+            }
         </tr>
     </thead>
     <tbody>
-        @foreach (var r in Model.Rows)
+        @for (var di = 0; di < Model.Days.Count; di++)
         {
-            <tr class="@(r.HasData ? "" : "nodata") @(r.Date.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "")">
-                <td class="text-nowrap"><a href="@Url.Action("Index", "Report", new { date = r.Date.ToString("yyyy-MM-dd") })">@r.Date.ToString("dd-MM")</a></td>
-                @foreach (var v in r.Values) { <td>@N(v)</td> }
-                <td class="tot">@N(r.Values.Sum())</td>
+            var (date, has) = Model.Days[di];
+            var rowSum = 0;
+            <tr class="@(has ? "" : "nodata") @(date.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "")">
+                <td class="text-nowrap"><a href="@Url.Action("Index", "Report", new { date = date.ToString("yyyy-MM-dd") })">@date.ToString("dd-MM")</a></td>
+                @foreach (var sd in Model.Sides)
+                {
+                    var vals = sd.Values[di];
+                    rowSum += vals.Sum();
+                    foreach (var v in vals) { <td>@N(v)</td> }
+                    <td class="sub side-end">@N(vals.Sum())</td>
+                }
+                @if (both) { <td class="tot">@N(rowSum)</td> }
             </tr>
         }
     </tbody>
     <tfoot>
         <tr class="grandtotal">
             <td>Tổng suất</td>
-            @foreach (var t in Model.ColTotals) { <td>@N(t)</td> }
-            <td>@N(grand)</td>
+            @foreach (var sd in Model.Sides)
+            {
+                foreach (var t in sd.Totals) { <td>@N(t)</td> }
+                <td class="side-end">@N(sd.Sum)</td>
+            }
+            @if (both) { <td>@N(Model.Sides.Sum(x => x.Sum))</td> }
+        </tr>
+        <tr>
+            <td>Đơn giá</td>
+            @foreach (var sd in Model.Sides) { <td colspan="@(sd.Columns.Count + 1)" class="side-end">@M(sd.Price)đ/suất</td> }
+            @if (both) { <td></td> }
         </tr>
         <tr>
             <td>Thành tiền</td>
-            @foreach (var m in Model.ColMoney) { <td>@M(m)</td> }
-            <td class="fw-bold">@M(Model.ColMoney.Sum())</td>
-        </tr>
-        <tr>
-            <td colspan="@(Model.Columns.Count + 2)" class="text-start small text-muted">
-                Đơn giá: cơm VN @M(Model.Settings.PriceVn)đ/suất · cơm TQ @M(Model.Settings.PriceCn)đ/suất
-            </td>
+            @foreach (var sd in Model.Sides)
+            {
+                foreach (var t in sd.Totals) { <td>@M(t * sd.Price)</td> }
+                <td class="fw-bold side-end">@M(sd.Money)</td>
+            }
+            @if (both) { <td class="fw-bold">@M(Model.Sides.Sum(x => x.Money))</td> }
         </tr>
     </tfoot>
 </table>

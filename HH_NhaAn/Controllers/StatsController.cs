@@ -64,7 +64,7 @@ public class StatsController(MealService svc) : Controller
         return View(vm);
     }
 
-    /// <summary>Bảng tổng hợp: ngày × bộ phận.</summary>
+    /// <summary>Bảng tổng hợp: ngày × bộ phận, tách khối cơm Việt Nam và cơm Trung Quốc.</summary>
     public IActionResult Summary(string? month, string? from, string? to, string? src, string? mode, bool detail = false)
     {
         var vm = new SummaryVm { Settings = svc.GetSettings(), Detail = detail, Mode = mode is "vn" or "cn" ? mode : "all" };
@@ -72,46 +72,54 @@ public class StatsController(MealService svc) : Controller
         var depts = svc.GetDepartments();
 
         // Cột: từng bộ phận, hoặc gộp theo nhóm
+        var labels = new List<string>();
         var colOf = new Dictionary<int, int>();
         foreach (var d in depts)
         {
             var label = detail || d.Group == "" ? d.Name : d.Group;
-            var idx = vm.Columns.IndexOf(label);
-            if (idx < 0) { vm.Columns.Add(label); idx = vm.Columns.Count - 1; }
+            var idx = labels.IndexOf(label);
+            if (idx < 0) { labels.Add(label); idx = labels.Count - 1; }
             colOf[d.Id] = idx;
         }
 
-        int n = vm.Columns.Count;
-        vm.ColTotals = new int[n];
-        vm.ColMoney = new decimal[n];
-        var reports = svc.GetRange(vm.From, vm.To).ToDictionary(r => r.Id);
-        foreach (var day in Days(vm.From, vm.To))
+        int n = labels.Count;
+        var days = Days(vm.From, vm.To).ToList();
+        var vn = new SummarySide { Title = "CƠM VIỆT NAM", Price = vm.Settings.PriceVn, Css = "side-vn" };
+        var cn = new SummarySide { Title = "CƠM TRUNG QUỐC", Price = vm.Settings.PriceCn, Css = "side-cn" };
+        foreach (var side in new[] { vn, cn })
         {
-            var vals = new int[n];
-            var has = reports.TryGetValue(MealService.Key(day), out var r);
-            if (has)
-                foreach (var e in r!.Entries)
-                {
-                    if (!colOf.TryGetValue(e.DeptId, out var i)) continue;
-                    var c = vm.Src == "plan" ? e.Plan : e.Final;
-                    var vn = vm.Mode == "cn" ? 0 : c.Vn;
-                    var cn = vm.Mode == "vn" ? 0 : c.Cn;
-                    vals[i] += vn + cn;
-                    vm.ColTotals[i] += vn + cn;
-                    vm.ColMoney[i] += vn * vm.Settings.PriceVn + cn * vm.Settings.PriceCn;
-                }
-            vm.Rows.Add((day, vals, has));
+            side.Columns = [.. labels];
+            side.Values = days.Select(_ => new int[n]).ToList();
+            side.Totals = new int[n];
         }
 
-        // Ẩn cột không có suất nào (trừ khi cả bảng trống)
-        if (vm.ColTotals.Any(x => x > 0))
+        var reports = svc.GetRange(vm.From, vm.To).ToDictionary(r => r.Id);
+        for (var di = 0; di < days.Count; di++)
         {
-            var keep = Enumerable.Range(0, n).Where(i => vm.ColTotals[i] > 0).ToArray();
-            vm.Columns = keep.Select(i => vm.Columns[i]).ToList();
-            vm.ColTotals = keep.Select(i => vm.ColTotals[i]).ToArray();
-            vm.ColMoney = keep.Select(i => vm.ColMoney[i]).ToArray();
-            vm.Rows = vm.Rows.Select(r => (r.Date, keep.Select(i => r.Values[i]).ToArray(), r.HasData)).ToList();
+            var has = reports.TryGetValue(MealService.Key(days[di]), out var r);
+            vm.Days.Add((days[di], has));
+            if (!has) continue;
+            foreach (var e in r!.Entries)
+            {
+                if (!colOf.TryGetValue(e.DeptId, out var i)) continue;
+                var c = vm.Src == "plan" ? e.Plan : e.Final;
+                vn.Values[di][i] += c.Vn; vn.Totals[i] += c.Vn;
+                cn.Values[di][i] += c.Cn; cn.Totals[i] += c.Cn;
+            }
         }
+
+        // Mỗi khối chỉ giữ cột bộ phận có suất (bảng trống thì giữ hết)
+        foreach (var side in new[] { vn, cn })
+        {
+            if (!side.Totals.Any(x => x > 0)) continue;
+            var keep = Enumerable.Range(0, n).Where(i => side.Totals[i] > 0).ToArray();
+            side.Columns = keep.Select(i => side.Columns[i]).ToList();
+            side.Totals = keep.Select(i => side.Totals[i]).ToArray();
+            side.Values = side.Values.Select(v => keep.Select(i => v[i]).ToArray()).ToList();
+        }
+
+        if (vm.Mode != "cn") vm.Sides.Add(vn);
+        if (vm.Mode != "vn") vm.Sides.Add(cn);
         return View(vm);
     }
 }
