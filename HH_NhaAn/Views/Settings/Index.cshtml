@@ -1,0 +1,70 @@
+@model SettingsVm
+@{
+    ViewData["Title"] = "Cài đặt";
+    var depts = Model.Departments.Append(new Department { Order = Model.Departments.Count + 1 }).ToList();
+    var workshops = Model.Departments.Select(d => d.Workshop).Where(x => x != "").Distinct();
+    var groups = Model.Departments.Select(d => d.Group).Where(x => x != "").Distinct();
+}
+<h4>Cài đặt</h4>
+<form method="post">
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">Đơn giá &amp; kỳ thống kê</div>
+        <div class="card-body row g-3">
+            <div class="col-sm-3">
+                <label class="form-label">Đơn giá cơm Việt Nam (đ/suất)</label>
+                <input type="number" min="0" step="500" class="form-control" asp-for="Settings.PriceVn" />
+            </div>
+            <div class="col-sm-3">
+                <label class="form-label">Đơn giá cơm Trung Quốc (đ/suất)</label>
+                <input type="number" min="0" step="500" class="form-control" asp-for="Settings.PriceCn" />
+            </div>
+            <div class="col-sm-4">
+                <label class="form-label">Ngày bắt đầu kỳ thống kê</label>
+                <input type="number" min="1" max="28" class="form-control" asp-for="Settings.PeriodStartDay" />
+                <div class="form-text">1 = theo tháng dương lịch. Ví dụ 25 → tháng 9 tính từ 25/08 đến 24/09.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">Danh sách bộ phận</div>
+        <div class="card-body">
+            <p class="small text-muted mb-2">
+                <b>Xưởng</b>: dùng để cộng dòng "Tổng X. ..." trên bảng báo cơm.
+                <b>Nhóm thống kê</b>: các bộ phận cùng nhóm sẽ được gộp chung một cột ở bảng Tổng hợp (vd: IT, Kế toán, Mua bán → "VP khác").
+                Dòng cuối để trống dùng để thêm bộ phận mới.
+            </p>
+            <table class="table table-sm table-bordered align-middle">
+                <thead class="table-light">
+                    <tr><th style="width:80px">Thứ tự</th><th>Tên bộ phận</th><th>Xưởng</th><th>Nhóm thống kê</th><th class="text-center">Đang dùng</th><th class="text-center">Xoá</th></tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < depts.Count; i++)
+                    {
+                        var d = depts[i];
+                        <tr class="@(d.Id == 0 ? "table-info" : "") @(d.Active ? "" : "text-muted")">
+                            <td><input type="hidden" name="Departments[@i].Id" value="@d.Id" />
+                                <input type="number" class="form-control form-control-sm" name="Departments[@i].Order" value="@d.Order" /></td>
+                            <td><input class="form-control form-control-sm" name="Departments[@i].Name" value="@d.Name" placeholder="@(d.Id == 0 ? "+ Thêm bộ phận mới" : "")" /></td>
+                            <td><input class="form-control form-control-sm" name="Departments[@i].Workshop" value="@d.Workshop" list="wsList" /></td>
+                            <td><input class="form-control form-control-sm" name="Departments[@i].Group" value="@d.Group" list="grpList" /></td>
+                            <td class="text-center">
+                                <input type="hidden" name="Departments[@i].Active" value="false" />
+                                <input class="form-check-input" type="checkbox" name="Departments[@i].Active" value="true" checked="@d.Active" />
+                            </td>
+                            <td class="text-center">
+                                @if (d.Id != 0)
+                                {
+                                    <input class="form-check-input" type="checkbox" name="Delete" value="@d.Id" />
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <datalist id="wsList">@foreach (var w in workshops) { <option value="@w"></option> }</datalist>
+            <datalist id="grpList">@foreach (var g in groups) { <option value="@g"></option> }</datalist>
+        </div>
+    </div>
+    <button class="btn btn-primary px-4">Lưu cài đặt</button>
+</form>

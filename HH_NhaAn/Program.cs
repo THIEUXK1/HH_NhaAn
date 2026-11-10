@@ -3,6 +3,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<HH_NhaAn.Data.LiteDbContext>();
+builder.Services.AddSingleton<HH_NhaAn.Data.MealService>();
 
 var app = builder.Build();
 

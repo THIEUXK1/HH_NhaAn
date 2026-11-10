@@ -1,47 +1,41 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - HH_NhaAn</title>
-    <script type="importmap"></script>
+    <title>@ViewData["Title"] - Nhà ăn</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/HH_NhaAn.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+    @{ var ctrl = ViewContext.RouteData.Values["controller"]?.ToString(); var act = ViewContext.RouteData.Values["action"]?.ToString(); }
+    <header class="no-print">
+        <nav class="navbar navbar-expand-sm navbar-dark bg-dark mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">HH_NhaAn</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <a class="navbar-brand" asp-controller="Report" asp-action="Index">🍚 Quản lý báo cơm</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                <div class="navbar-collapse collapse">
+                    <ul class="navbar-nav">
+                        <li class="nav-item"><a class="nav-link @(ctrl == "Report" ? "active" : "")" asp-controller="Report" asp-action="Index">Báo cơm hằng ngày</a></li>
+                        <li class="nav-item"><a class="nav-link @(act == "Department" ? "active" : "")" asp-controller="Stats" asp-action="Department">Thống kê theo bộ phận</a></li>
+                        <li class="nav-item"><a class="nav-link @(act == "Summary" ? "active" : "")" asp-controller="Stats" asp-action="Summary">Tổng hợp</a></li>
+                        <li class="nav-item"><a class="nav-link @(ctrl == "Settings" ? "active" : "")" asp-controller="Settings" asp-action="Index">Cài đặt</a></li>
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
+    <div class="container-fluid px-3">
+        @if (TempData["msg"] is string msg)
+        {
+            <div class="alert alert-success alert-dismissible py-2 no-print">@msg<button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button></div>
+        }
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - HH_NhaAn - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

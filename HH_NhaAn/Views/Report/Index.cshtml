@@ -1,0 +1,198 @@
+@model DailyReportVm
+@{
+    ViewData["Title"] = "Báo cơm hằng ngày";
+    string Key(DateOnly d) => d.ToString("yyyy-MM-dd");
+    string V(int x) => x == 0 ? "" : x.ToString();
+    var cols = new[] { "VnOfficial", "VnSeasonal", "CnLunch", "CnDinner", "CnNight", "CnBreakfast" };
+    var colCss = new[] { "", "", "", "c-dinner", "c-night", "c-breakfast" };
+    var groups = Model.Rows.Select((r, i) => (r.Dept, r.Entry, i)).GroupBy(x => x.Dept.Workshop).ToList();
+    int no = 0;
+}
+
+<form method="post" asp-action="Save" id="reportForm">
+    <input type="hidden" name="Date" value="@Key(Model.Date)" />
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-2 no-print">
+        <h4 class="m-0 me-2">BÁO CƠM HÀNG NGÀY</h4>
+        <a class="btn btn-outline-secondary btn-sm" href="?date=@Key(Model.Date.AddDays(-1))" title="Ngày trước">‹</a>
+        <input type="date" class="form-control form-control-sm w-auto" value="@Key(Model.Date)" onchange="location='?date='+this.value" />
+        <a class="btn btn-outline-secondary btn-sm" href="?date=@Key(Model.Date.AddDays(1))" title="Ngày sau">›</a>
+        <a class="btn btn-outline-secondary btn-sm" href="?date=@Key(DateOnly.FromDateTime(DateTime.Today))">Hôm nay</a>
+        @if (Model.CopiedFrom != null)
+        {
+            <span class="badge text-bg-warning">Đã chép số từ ngày @Model.CopiedFrom — chưa lưu</span>
+        }
+        else if (Model.Saved)
+        {
+            <span class="badge text-bg-success">Đã lưu lúc @Model.UpdatedAt?.ToString("HH:mm dd/MM")</span>
+        }
+        else
+        {
+            <span class="badge text-bg-secondary">Chưa có dữ liệu</span>
+        }
+        <div class="ms-auto d-flex gap-2">
+            <a class="btn btn-outline-primary btn-sm" href="?date=@Key(Model.Date)&copyPrev=true"
+               onclick="return confirm('Chép toàn bộ số của ngày có dữ liệu gần nhất trước ngày này? (chưa lưu cho tới khi bấm Lưu)')">Chép số ngày trước</a>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="planToFinal">Dự kiến → Chốt</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">In</button>
+            <button type="submit" class="btn btn-primary btn-sm px-4">Lưu</button>
+        </div>
+    </div>
+    <div class="print-only text-center fw-bold mb-2">BÁO CƠM HÀNG NGÀY: @Model.Date.ToString("d-M-yyyy")</div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-sm meal-table align-middle" id="mealTable">
+            <thead class="text-center">
+                <tr>
+                    <th rowspan="4">No</th>
+                    <th rowspan="4">Xưởng</th>
+                    <th rowspan="4" class="text-start">Bộ phận</th>
+                    <th rowspan="3" colspan="2">Số lượng CNV hiện tại</th>
+                    <th colspan="6" class="h-plan">Dự kiến</th>
+                    <th colspan="6" class="h-final">Chốt</th>
+                </tr>
+                <tr>
+                    @for (var k = 0; k < 2; k++)
+                    {
+                        <th colspan="2">Cơm Việt Nam</th>
+                        <th colspan="4">Cơm Trung Quốc</th>
+                    }
+                </tr>
+                <tr>
+                    @for (var k = 0; k < 2; k++)
+                    {
+                        <th colspan="2">Bữa trưa</th>
+                        <th rowspan="2">Bữa trưa</th>
+                        <th rowspan="2" class="c-dinner">Bữa tối</th>
+                        <th rowspan="2" class="c-night">Bữa đêm</th>
+                        <th rowspan="2" class="c-breakfast">Bữa sáng</th>
+                    }
+                </tr>
+                <tr>
+                    <th>Chính thức</th><th>Thời vụ</th>
+                    @for (var k = 0; k < 2; k++)
+                    {
+                        <th>Chính thức</th><th>Thời vụ</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var g in groups)
+                {
+                    var first = true;
+                    foreach (var (dept, e, i) in g)
+                    {
+                        no++;
+                        <tr data-ws="@g.Key">
+                            <td class="text-center">@no</td>
+                            @if (first)
+                            {
+                                <td rowspan="@g.Count()" class="fw-bold text-center ws-cell">@g.Key</td>
+                                first = false;
+                            }
+                            <td class="fw-semibold text-nowrap">
+                                @dept.Name @if (!dept.Active) { <small class="text-muted">(ngừng)</small> }
+                                <input type="hidden" name="Entries[@i].DeptId" value="@dept.Id" />
+                            </td>
+                            <td><input class="num" type="number" min="0" name="Entries[@i].StaffOfficial" value="@V(e.StaffOfficial)" data-col="s0" /></td>
+                            <td><input class="num" type="number" min="0" name="Entries[@i].StaffSeasonal" value="@V(e.StaffSeasonal)" data-col="s1" /></td>
+                            @{ var pa = e.Plan.ToArray(); var fa = e.Final.ToArray(); }
+                            @for (var c = 0; c < 6; c++)
+                            {
+                                <td class="@colCss[c]"><input class="num" type="number" min="0" name="Entries[@i].Plan.@cols[c]" value="@V(pa[c])" data-col="p@(c)" /></td>
+                            }
+                            @for (var c = 0; c < 6; c++)
+                            {
+                                <td class="@colCss[c] f-cell"><input class="num" type="number" min="0" name="Entries[@i].Final.@cols[c]" value="@V(fa[c])" data-col="f@(c)" /></td>
+                            }
+                        </tr>
+                    }
+                    <tr class="subtotal" data-sum-ws="@g.Key">
+                        <td colspan="3" class="text-center">Tổng @g.Key</td>
+                        @foreach (var k in new[] { "s0", "s1", "p0", "p1", "p2", "p3", "p4", "p5", "f0", "f1", "f2", "f3", "f4", "f5" })
+                        {
+                            <td class="text-center" data-sum="@k"></td>
+                        }
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="grandtotal">
+                    <td colspan="3" class="text-center">Số đặt cơm</td>
+                    @foreach (var k in new[] { "s0", "s1", "p0", "p1", "p2", "p3", "p4", "p5", "f0", "f1", "f2", "f3", "f4", "f5" })
+                    {
+                        <td class="text-center" data-total="@k"></td>
+                    }
+                </tr>
+                <tr class="grandtotal2">
+                    <td colspan="5" class="text-center">Tổng suất (VN / TQ / Tất cả)</td>
+                    <td colspan="6" class="text-center" id="planSum"></td>
+                    <td colspan="6" class="text-center" id="finalSum"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <p class="text-muted small no-print">Mẹo: Enter để xuống ô dưới cùng cột. Số liệu cột <b>Chốt</b> được dùng cho các bảng thống kê.</p>
+</form>
+
+@section Scripts {
+<script>
+(function () {
+    const table = document.getElementById('mealTable');
+    const val = el => parseInt(el.value) || 0;
+    const fmt = n => n ? n.toLocaleString('vi-VN') : '';
+
+    function recalc() {
+        const totals = {};
+        table.querySelectorAll('tr.subtotal').forEach(sub => {
+            const ws = sub.dataset.sumWs;
+            const sums = {};
+            table.querySelectorAll(`tr[data-ws="${CSS.escape(ws)}"] input.num`).forEach(inp => {
+                sums[inp.dataset.col] = (sums[inp.dataset.col] || 0) + val(inp);
+            });
+            sub.querySelectorAll('[data-sum]').forEach(td => {
+                const v = sums[td.dataset.sum] || 0;
+                td.textContent = fmt(v);
+                totals[td.dataset.sum] = (totals[td.dataset.sum] || 0) + v;
+            });
+        });
+        table.querySelectorAll('[data-total]').forEach(td => td.textContent = fmt(totals[td.dataset.total] || 0));
+        for (const p of ['p', 'f']) {
+            const t = i => totals[p + i] || 0;
+            const vn = t(0) + t(1), cn = t(2) + t(3) + t(4) + t(5);
+            document.getElementById(p === 'p' ? 'planSum' : 'finalSum').textContent =
+                `VN: ${vn.toLocaleString('vi-VN')} · TQ: ${cn.toLocaleString('vi-VN')} · Tổng: ${(vn + cn).toLocaleString('vi-VN')}`;
+        }
+    }
+
+    table.addEventListener('input', recalc);
+
+    // Enter → xuống ô cùng cột
+    table.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' || !e.target.matches('input.num')) return;
+        e.preventDefault();
+        const col = e.target.dataset.col;
+        const all = [...table.querySelectorAll(`input[data-col="${col}"]`)];
+        const next = all[all.indexOf(e.target) + (e.shiftKey ? -1 : 1)];
+        if (next) { next.focus(); next.select(); }
+    });
+    table.addEventListener('focusin', e => { if (e.target.matches('input.num')) e.target.select(); });
+
+    document.getElementById('planToFinal').addEventListener('click', () => {
+        if (!confirm('Chép toàn bộ số Dự kiến sang cột Chốt?')) return;
+        table.querySelectorAll('input[data-col^="p"]').forEach(inp => {
+            const tr = inp.closest('tr');
+            tr.querySelector(`input[data-col="f${inp.dataset.col.slice(1)}"]`).value = inp.value;
+        });
+        recalc();
+    });
+
+    // Cảnh báo khi rời trang mà chưa lưu
+    let dirty = @(Model.CopiedFrom != null ? "true" : "false");
+    table.addEventListener('input', () => dirty = true);
+    document.getElementById('reportForm').addEventListener('submit', () => dirty = false);
+    window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+    recalc();
+})();
+</script>
+}

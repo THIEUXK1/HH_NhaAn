@@ -29,3 +29,42 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+/* ===== Báo cơm ===== */
+body { margin-bottom: 0; background: #f6f7f9; }
+.meal-table, .stat-table { background: #fff; font-size: .9rem; }
+.meal-table th { background: #eef1f5; vertical-align: middle; font-weight: 600; font-size: .82rem; }
+.meal-table th.h-plan { background: #dbe7f7; }
+.meal-table th.h-final { background: #fde2c8; }
+.meal-table td { padding: 0; }
+.meal-table td:not(:has(input)) { padding: .25rem .4rem; }
+.meal-table input.num { width: 100%; min-width: 46px; border: 0; text-align: center; padding: .3rem .2rem; background: transparent; -moz-appearance: textfield; }
+.meal-table input.num::-webkit-inner-spin-button, .meal-table input.num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.meal-table input.num:focus { outline: 2px solid #258cfb; background: #fffbe6; }
+.meal-table .c-dinner { background: #c9d6f2; }
+.meal-table .c-night { background: #d9ead3; }
+.meal-table .c-breakfast { background: #f8cbad; }
+.meal-table td.f-cell:not(.c-dinner):not(.c-night):not(.c-breakfast) { background: #fffaf3; }
+.meal-table tr.subtotal td { background: #fff59d; color: #c62828; font-weight: 700; padding: .3rem .2rem; }
+.meal-table tr.subtotal:nth-last-child(1) td { background: #c5e1a5; }
+.meal-table tr.grandtotal td, .meal-table tr.grandtotal2 td { background: #e8eaf6; font-weight: 700; color: #b71c1c; padding: .35rem .2rem; }
+.meal-table .ws-cell { background: #fafafa; writing-mode: horizontal-tb; }
+
+.stat-table th { background: #eef1f5; font-size: .82rem; vertical-align: middle; }
+.stat-table th.title-row { background: #fff; font-size: 1.05rem; }
+.stat-table .sub { background: #f3f6fb; font-weight: 600; }
+.stat-table .tot { background: #fff3e0; font-weight: 700; }
+.stat-table tr.nodata td { color: #aaa; }
+.stat-table tr.sunday td:first-child { color: #c62828; }
+.stat-table tr.grandtotal td { background: #e8eaf6; font-weight: 700; color: #b71c1c; }
+
+.print-only { display: none; }
+@media print {
+  .no-print, .navbar, .alert { display: none !important; }
+  .print-only { display: block; }
+  .sign.print-only { display: flex; height: 120px; }
+  body { background: #fff; }
+  .table-responsive { overflow: visible !important; }
+  .meal-table, .stat-table { font-size: 10px; }
+  a { color: inherit; text-decoration: none; }
+  @page { size: A4 landscape; margin: 8mm; }
+}

@@ -1,0 +1,20 @@
+@model PeriodVm
+<div class="col-auto">
+    <label class="form-label small mb-0">Tháng</label>
+    <input type="month" name="month" value="@Model.Month" class="form-control form-control-sm" onchange="this.form.from.value='';this.form.to.value='';this.form.submit()" />
+</div>
+<div class="col-auto">
+    <label class="form-label small mb-0">Từ ngày</label>
+    <input type="date" name="from" value="@Model.From.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+</div>
+<div class="col-auto">
+    <label class="form-label small mb-0">Đến ngày</label>
+    <input type="date" name="to" value="@Model.To.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+</div>
+<div class="col-auto">
+    <label class="form-label small mb-0">Số liệu</label>
+    <select name="src" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="final" selected="@(Model.Src == "final")">Chốt</option>
+        <option value="plan" selected="@(Model.Src == "plan")">Dự kiến</option>
+    </select>
+</div>

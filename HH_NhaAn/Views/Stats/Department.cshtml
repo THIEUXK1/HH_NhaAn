@@ -1,0 +1,103 @@
+@model DeptStatsVm
+@{
+    ViewData["Title"] = "Thống kê theo bộ phận";
+    string N(int x) => x == 0 ? "" : x.ToString("N0");
+    string M(decimal x) => x.ToString("N0");
+    var labels = new[] { "Cơm VN trưa<br/>Chính thức", "Cơm VN trưa<br/>Thời vụ", "Cơm TQ<br/>Bữa trưa", "Cơm TQ<br/>Bữa tối", "Cơm TQ<br/>Bữa đêm", "Cơm TQ<br/>Bữa sáng" };
+    var s = Model.ShowCol;
+    var showVn = s[0] || s[1];
+    var showCn = s[2] || s[3] || s[4] || s[5];
+    var tot = Model.Total.ToArray();
+    var lastVn = s[1] ? 1 : 0;
+    var lastCn = Enumerable.Range(2, 4).Where(c => s[c]).DefaultIfEmpty(5).Max();
+    var money = Model.Total.Vn * Model.Settings.PriceVn + Model.Total.Cn * Model.Settings.PriceCn;
+}
+
+<form method="get" class="row g-2 align-items-end mb-3 no-print">
+    <div class="col-auto">
+        <label class="form-label small mb-0">Bộ phận / nhóm</label>
+        <select name="sel" class="form-select form-select-sm" onchange="this.form.submit()">
+            @foreach (var grp in Model.Options.GroupBy(o => o.OptGroup))
+            {
+                if (grp.Key == "")
+                {
+                    foreach (var o in grp) { <option value="@o.Value" selected="@(o.Value == Model.Sel)">@o.Label</option> }
+                }
+                else
+                {
+                    <optgroup label="@grp.Key">
+                        @foreach (var o in grp) { <option value="@o.Value" selected="@(o.Value == Model.Sel)">@o.Label</option> }
+                    </optgroup>
+                }
+            }
+        </select>
+    </div>
+    <partial name="_PeriodFilter" model="Model" />
+    <div class="col-auto"><button class="btn btn-primary btn-sm">Xem</button></div>
+    <div class="col-auto ms-auto">
+        <button type="button" class="btn btn-outline-success btn-sm" onclick="exportExcel('statTable','ThongKe_@(Model.Title)_@(Model.From.ToString("yyyyMMdd"))-@(Model.To.ToString("yyyyMMdd"))')">Xuất Excel</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">In</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-bordered table-sm stat-table text-center align-middle" id="statTable">
+    <thead>
+        <tr><th colspan="@(2 + s.Count(x => x) + (showVn && showCn ? 2 : 0))" class="title-row">
+            BẢNG THỐNG KÊ BÁO CƠM — @Model.Title.ToUpper()<br />
+            <span class="fw-normal small">Từ @Model.From.ToString("dd/MM/yyyy") đến @Model.To.ToString("dd/MM/yyyy") · Số liệu @Model.SrcLabel</span>
+        </th></tr>
+        <tr>
+            <th>Ngày</th>
+            @for (var c = 0; c < 6; c++)
+            {
+                if (!s[c]) continue;
+                <th>@Html.Raw(labels[c])</th>
+                if (c == lastVn && showVn && showCn) { <th class="sub">Tổng<br/>cơm VN</th> }
+                if (c == lastCn && showVn && showCn) { <th class="sub">Tổng<br/>cơm TQ</th> }
+            }
+            <th class="tot">TỔNG</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model.Rows)
+        {
+            var a = r.C.ToArray();
+            <tr class="@(r.HasData ? "" : "nodata") @(r.Date.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "")">
+                <td class="text-nowrap"><a href="@Url.Action("Index", "Report", new { date = r.Date.ToString("yyyy-MM-dd") })">@r.Date.ToString("dd-MM")</a></td>
+                @for (var c = 0; c < 6; c++)
+                {
+                    if (!s[c]) continue;
+                    <td>@N(a[c])</td>
+                    if (c == lastVn && showVn && showCn) { <td class="sub">@N(r.C.Vn)</td> }
+                    if (c == lastCn && showVn && showCn) { <td class="sub">@N(r.C.Cn)</td> }
+                }
+                <td class="tot">@N(r.C.Total)</td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr class="grandtotal">
+            <td>TỔNG</td>
+            @for (var c = 0; c < 6; c++)
+            {
+                if (!s[c]) continue;
+                <td>@N(tot[c])</td>
+                if (c == lastVn && showVn && showCn) { <td>@N(Model.Total.Vn)</td> }
+                if (c == lastCn && showVn && showCn) { <td>@N(Model.Total.Cn)</td> }
+            }
+            <td>@N(Model.Total.Total)</td>
+        </tr>
+        <tr>
+            <td colspan="@(1 + s.Count(x => x) + (showVn && showCn ? 2 : 0))" class="text-end">
+                Đơn giá: @if (showVn) { <span>cơm VN @M(Model.Settings.PriceVn)đ</span> } @if (showVn && showCn) { <span> · </span> } @if (showCn) { <span>cơm TQ @M(Model.Settings.PriceCn)đ</span> }
+                &nbsp;→&nbsp; <b>Thành tiền</b>
+            </td>
+            <td class="fw-bold">@M(money)</td>
+        </tr>
+    </tfoot>
+</table>
+</div>
+<div class="row text-center mt-4 print-only sign">
+    <div class="col">Người lập biểu</div><div class="col">Quản lý bộ phận</div><div class="col">Phê duyệt</div>
+</div>
