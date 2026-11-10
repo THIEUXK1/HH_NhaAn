@@ -131,8 +131,37 @@
             </tfoot>
         </table>
     </div>
-    <p class="text-muted small no-print">Mẹo: Enter để xuống ô dưới cùng cột. Số liệu cột <b>Chốt</b> được dùng cho các bảng thống kê.</p>
+    <p class="text-muted small no-print">Mẹo: Enter để xuống ô dưới cùng cột. Số liệu cột <b>Chốt</b> được dùng cho các bảng thống kê bên dưới.</p>
 </form>
+
+@{
+    string month = ViewBag.Month;
+    var mLabel = month[5..] + "/" + month[..4];
+}
+<div class="card no-print">
+    <div class="card-header fw-semibold">📊 Bảng thống kê tháng @mLabel</div>
+    <div class="card-body">
+        <div class="mb-2">
+            <a class="btn btn-success btn-sm" asp-controller="Stats" asp-action="Summary" asp-route-month="@month">Bảng tổng hợp tất cả bộ phận</a>
+            <a class="btn btn-outline-success btn-sm" asp-controller="Stats" asp-action="Summary" asp-route-month="@month" asp-route-detail="true">Tổng hợp (tách từng bộ phận)</a>
+            <a class="btn btn-outline-success btn-sm" asp-controller="Stats" asp-action="Department" asp-route-month="@month" asp-route-sel="all">Tất cả bộ phận theo loại bữa</a>
+        </div>
+        <div class="mb-2">
+            <span class="small text-muted me-1">Theo nhóm:</span>
+            @foreach (string g in ViewBag.Groups)
+            {
+                <a class="btn btn-outline-primary btn-sm mb-1" asp-controller="Stats" asp-action="Department" asp-route-month="@month" asp-route-sel="@("g:" + g)">@g</a>
+            }
+        </div>
+        <div>
+            <span class="small text-muted me-1">Theo bộ phận:</span>
+            @foreach (Department dp in ViewBag.Depts)
+            {
+                <a class="btn btn-outline-secondary btn-sm mb-1" asp-controller="Stats" asp-action="Department" asp-route-month="@month" asp-route-sel="@("d:" + dp.Id)">@dp.Name</a>
+            }
+        </div>
+    </div>
+</div>
 
 @section Scripts {
 <script>

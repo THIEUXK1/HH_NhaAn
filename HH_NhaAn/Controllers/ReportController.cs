@@ -43,6 +43,14 @@ public class ReportController(MealService svc) : Controller
             if (!dept.Active && !hasData) continue;
             vm.Rows.Add((dept, e ?? new DailyEntry { DeptId = dept.Id }));
         }
+
+        // Tháng (kỳ) chứa ngày đang xem → dùng cho các nút xem bảng thống kê
+        var start = Math.Clamp(svc.GetSettings().PeriodStartDay, 1, 28);
+        var m = new DateOnly(d.Year, d.Month, 1);
+        if (start > 1 && d.Day >= start) m = m.AddMonths(1);
+        ViewBag.Month = m.ToString("yyyy-MM");
+        ViewBag.Groups = depts.Where(x => x.Active).Select(x => x.Group).Where(g => g != "").Distinct().ToList();
+        ViewBag.Depts = depts.Where(x => x.Active).ToList();
         return View(vm);
     }
 
