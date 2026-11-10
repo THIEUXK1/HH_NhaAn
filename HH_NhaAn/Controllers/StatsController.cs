@@ -58,9 +58,9 @@ public class StatsController(MealService svc) : Controller
             vm.Rows.Add((day, c, has));
             vm.Total.Add(c);
         }
-        var tot = vm.Total.ToArray();
-        vm.ShowCol = tot.Select(x => x > 0).ToArray();
-        if (!vm.ShowCol.Any(x => x)) vm.ShowCol = [true, true, true, true, true, true];
+
+
+        vm.ShowCol = [true, true, true, true, true, true]; // luôn hiện đủ các cột
         return View(vm);
     }
 

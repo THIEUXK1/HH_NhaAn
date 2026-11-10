@@ -64,6 +64,8 @@ public class AppSettings
     public decimal PriceCn { get; set; } = 25000;
     /// <summary>Ngày bắt đầu kỳ thống kê (1 = theo tháng dương lịch; 25 = 25 tháng trước → 24 tháng này).</summary>
     public int PeriodStartDay { get; set; } = 1;
+    /// <summary>Phiên bản dữ liệu (dùng cho cập nhật một lần).</summary>
+    public int DataVersion { get; set; }
 }
 
 // ===== View models =====

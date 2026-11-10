@@ -20,7 +20,7 @@ public sealed class MealService
 
     private void Seed()
     {
-        if (Depts.Count() > 0) return;
+        if (Depts.Count() > 0) { Migrate(); return; }
         (string Name, string Ws, string Group)[] seed =
         [
             ("In Xoa", "Xưởng mới", "BP In xoa"),
@@ -31,15 +31,32 @@ public sealed class MealService
             ("Kế toán", "Xưởng cũ", "VP khác"),
             ("Mua bán", "Xưởng cũ", "VP khác"),
             ("Nghiệp vụ", "Xưởng cũ", "VP khác"),
-            ("Lái xe", "Xưởng cũ", "VP khác"),
-            ("Tạp vụ", "Xưởng cũ", "VP khác"),
+            ("Lái xe", "Xưởng cũ", "HCNS"),
+            ("Tạp vụ", "Xưởng cũ", "HCNS"),
             ("HCNS", "Xưởng cũ", "HCNS"),
-            ("Bảo vệ", "Xưởng cũ", "VP khác"),
+            ("Bảo vệ", "Xưởng cũ", "HCNS"),
             ("Văn phòng (TQ)", "Xưởng cũ", "VP người nước ngoài"),
             ("Hỗ trợ (TQ)", "Xưởng cũ", "VP người nước ngoài"),
         ];
         var i = 0;
         Depts.InsertBulk(seed.Select(s => new Department { Name = s.Name, Workshop = s.Ws, Group = s.Group, Order = ++i }));
+    }
+
+    /// <summary>Cập nhật dữ liệu cũ một lần theo DataVersion.</summary>
+    private void Migrate()
+    {
+        var s = GetSettings();
+        if (s.DataVersion < 1)
+        {
+            // v1: Lái xe, Tạp vụ, Bảo vệ thuộc nhóm HCNS (không phải VP khác)
+            foreach (var d in Depts.FindAll().Where(d => d.Name is "Lái xe" or "Tạp vụ" or "Bảo vệ" && d.Group == "VP khác").ToList())
+            {
+                d.Group = "HCNS";
+                Depts.Update(d);
+            }
+            s.DataVersion = 1;
+            SaveSettings(s);
+        }
     }
 
     // ===== Bộ phận =====

@@ -3,13 +3,14 @@
     ViewData["Title"] = "Thống kê theo bộ phận";
     string N(int x) => x == 0 ? "" : x.ToString("N0");
     string M(decimal x) => x.ToString("N0");
-    var labels = new[] { "Cơm VN trưa<br/>Chính thức", "Cơm VN trưa<br/>Thời vụ", "Cơm TQ<br/>Bữa trưa", "Cơm TQ<br/>Bữa tối", "Cơm TQ<br/>Bữa đêm", "Cơm TQ<br/>Bữa sáng" };
+    var labels = new[] { "Cơm VN trưa<br/>Chính thức", "Cơm VN trưa<br/>Thời vụ", "Cơm TQ<br/>Bữa trưa", "Cơm TQ<br/>Bữa tối", "Cơm TQ<br/>Ca đêm", "Cơm TQ<br/>Bữa sáng" };
     var s = Model.ShowCol;
     var showVn = s[0] || s[1];
     var showCn = s[2] || s[3] || s[4] || s[5];
     var tot = Model.Total.ToArray();
     var lastVn = s[1] ? 1 : 0;
-    var lastCn = Enumerable.Range(2, 4).Where(c => s[c]).DefaultIfEmpty(5).Max();
+    var order = new[] { 0, 1, 5, 2, 3, 4 }; // VN CT, VN TV, TQ sáng, trưa, tối, ca đêm
+    var lastCn = 4;
     var money = Model.Total.Vn * Model.Settings.PriceVn + Model.Total.Cn * Model.Settings.PriceCn;
 }
 
@@ -49,7 +50,7 @@
         </th></tr>
         <tr>
             <th>Ngày</th>
-            @for (var c = 0; c < 6; c++)
+            @foreach (var c in order)
             {
                 if (!s[c]) continue;
                 <th>@Html.Raw(labels[c])</th>
@@ -65,7 +66,7 @@
             var a = r.C.ToArray();
             <tr class="@(r.HasData ? "" : "nodata") @(r.Date.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "")">
                 <td class="text-nowrap"><a href="@Url.Action("Index", "Report", new { date = r.Date.ToString("yyyy-MM-dd") })">@r.Date.ToString("dd-MM")</a></td>
-                @for (var c = 0; c < 6; c++)
+                @foreach (var c in order)
                 {
                     if (!s[c]) continue;
                     <td>@N(a[c])</td>
@@ -79,7 +80,7 @@
     <tfoot>
         <tr class="grandtotal">
             <td>TỔNG</td>
-            @for (var c = 0; c < 6; c++)
+            @foreach (var c in order)
             {
                 if (!s[c]) continue;
                 <td>@N(tot[c])</td>

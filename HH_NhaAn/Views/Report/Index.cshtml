@@ -168,7 +168,7 @@
 (function () {
     const table = document.getElementById('mealTable');
     const val = el => parseInt(el.value) || 0;
-    const fmt = n => n ? n.toLocaleString('vi-VN') : '';
+    const fmt = n => n.toLocaleString('vi-VN');
 
     function recalc() {
         const totals = {};
@@ -194,6 +194,7 @@
     }
 
     table.addEventListener('input', recalc);
+    table.addEventListener('change', recalc);
 
     // Enter → xuống ô cùng cột
     table.addEventListener('keydown', e => {
